@@ -1,4 +1,9 @@
 #include "systemcalls.h"
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+
 
 /**
  * @param cmd the command to execute with system()
@@ -16,7 +21,10 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
-
+    int ret;
+    ret = system(cmd);
+    if (ret == -1)
+	return false;
     return true;
 }
 
@@ -58,8 +66,18 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
-
     va_end(args);
+    pid_t pid = fork();
+    if (pid == -1)
+	return false;
+
+    int ret;
+    ret = execv (command[0], command);
+    if (ret == -1)
+	return false;
+
+    if (waitpid(pid, 0, WEXITED) == -1)
+	return false;
 
     return true;
 }
@@ -84,15 +102,31 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     // and may be removed
     command[count] = command[count];
 
+    int c_pid;
+    int ret;
+    pid_t pid;
+    int fd = open(outputfile, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+    if (fd < 0) {
+	perror("open");
+	abort ();
+    }
+    switch (c_pid = fork ()) {
+    case -1:
+	perror ("fork");
+	abort ();
+    case 0:
+	if (dup2 (fd, 1) < 0) {
+	    perror ("dup2");
+	    abort ();
+	}
+    default:
+	pid = fork();
+	ret = execv (command[0], command);
+	if (ret == -1) return false;
+ 	if (waitpid(pid, 0, WEXITED) == -1) return false;
+    }
 
-/*
- * TODO
- *   Call execv, but first using https://stackoverflow.com/a/13784315/1446624 as a refernce,
- *   redirect standard out to a file specified by outputfile.
- *   The rest of the behaviour is same as do_exec()
- *
-*/
-
+    close (fd);
     va_end(args);
 
     return true;
