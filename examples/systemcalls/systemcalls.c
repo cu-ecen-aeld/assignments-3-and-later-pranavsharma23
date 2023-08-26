@@ -14,13 +14,6 @@
 */
 bool do_system(const char *cmd)
 {
-
-/*
- * TODO  add your code here
- *  Call the system() function with the command set in the cmd
- *   and return a boolean true if the system() call completed with success
- *   or false() if it returned a failure
-*/
     int ret;
     ret = system(cmd);
     if (ret == -1)
@@ -67,10 +60,10 @@ bool do_exec(int count, ...)
     if (ret == -1)
 	return false;
 
-    if (waitpid(pid, 0, WEXITED) == -1)
-	return false;
+    if (waitpid(pid, 0, WEXITED) == 0)
+	return true;
 
-    return true;
+    return false;
 }
 
 /**
