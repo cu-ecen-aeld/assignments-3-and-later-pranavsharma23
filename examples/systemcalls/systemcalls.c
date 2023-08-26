@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/types.h>
 #include <fcntl.h>
 
 
@@ -17,7 +18,9 @@ bool do_system(const char *cmd)
     int ret;
     ret = system(cmd);
     if (ret == -1)
+    {
 	return false;
+    }
     return true;
 }
 
@@ -51,12 +54,13 @@ bool do_exec(int count, ...)
     command[count] = command[count];
 
     va_end(args);
+
     pid_t pid = fork();
     if (pid == -1)
 	return false;
 
     int ret;
-    ret = execv (command[0], command);
+    ret = execv (command[0], &command[1]);
     if (ret == -1)
 	return false;
 
@@ -103,7 +107,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 	    abort ();
 	}
     default:
-	ret = execv (command[0], command);
+	ret = execv (command[0], &command[1]);
 	if (ret == -1)
 	    return false;
  	if (waitpid(c_pid, 0, WEXITED) == -1)
