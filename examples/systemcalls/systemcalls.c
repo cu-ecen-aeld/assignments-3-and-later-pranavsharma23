@@ -86,9 +86,8 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     // and may be removed
     command[count] = command[count];
 
-    int c_pid;
+    pid_t c_pid;
     int ret;
-    pid_t pid;
     int fd = open(outputfile, O_WRONLY | O_TRUNC | O_CREAT, 0644);
     if (fd < 0) {
 	perror("open");
@@ -104,10 +103,11 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 	    abort ();
 	}
     default:
-	pid = fork();
 	ret = execv (command[0], command);
-	if (ret == -1) return false;
- 	if (waitpid(pid, 0, WEXITED) == -1) return false;
+	if (ret == -1)
+	    return false;
+ 	if (waitpid(c_pid, 0, WEXITED) == -1)
+	    return false ;
     }
 
     close (fd);
