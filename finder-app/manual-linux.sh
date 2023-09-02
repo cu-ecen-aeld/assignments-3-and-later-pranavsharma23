@@ -35,11 +35,11 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
     git checkout ${KERNEL_VERSION}
 
     # TODO: Add your kernel build steps here
-    make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu-mrproper
-    make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu-defconfig
-    make -j4 ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu-all
-    make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu-modules
-    make ARCH=arm64 CROSS_COMPILE=aarch4-none-linux-gnu-dtbs
+    make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- mrproper
+    make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- defconfig
+    make -j4 ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- all
+    make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- modules
+    make ARCH=arm64 CROSS_COMPILE=aarch4-none-linux-gnu- dtbs
 fi
 
 echo "Adding the Image in outdir"
@@ -53,8 +53,8 @@ then
 fi
 
 # TODO: Create necessary base directories
-mkdir "$OUTDIR"/rootfs
-cd "$OUTDIR"/rootfs
+mkdir "$OUTDIR/rootfs"
+cd "$OUTDIR/rootfs"
 mkdir -p bin dev etc home lib lib64 proc sbin sys tmp usr var
 mkdir -p usr/bin usr/lib usr/sbin
 mkdir -p var/log
@@ -68,6 +68,7 @@ git clone git://busybox.net/busybox.git
     # TODO:  Configure busybox
     make distclean
     make defconfig
+    make menuconfig
 else
     cd busybox
 fi
@@ -81,8 +82,11 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
-cd $OUTDIR/rootfs
-#cp -a $SYSROOT/lib/ld-liux-
+SYSROOT=aarch64-none-linux-gnu-gcc -print-sysroot
+cp -a "$SYSROOT/lib/ld-linux-aarch64.so.1" lib
+cp -a "$SYSROOT/lib64/libm.so.6" lib64
+cp -a "$SYSROOT/lib64/libresolv.so.2" lib64
+cp -a "$SYSROOT/lib64/libc.so.6" lib64
 
 # TODO: Make device nodes
 sudo mknod -m 666 dev/null c 1 3
@@ -97,10 +101,10 @@ make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
 cp finder-app/{*.sh,writer} $OUTDIR/rootfs/home
 
 # TODO: Chown the root directory
-cd rootfs/
+cd "$OUTDIR/rootfs"
 sudo chown -R root:root * 
 
 # TODO: Create initramfs.cpio.gz
-cd $OUTDIR/rootfs
+cd "$OUTDIR/rootfs"
 find . | cpio -H newc -ov --owner root:root > ${OUTDIR}/initramfs.cpio
 gzip -f initramfs.cpio

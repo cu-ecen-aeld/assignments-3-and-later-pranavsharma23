@@ -1,10 +1,10 @@
-CROSS_COMPILE = aarch64-none-linux-gnu-
-CC = gcc
-TARGET = writer
-SRC = writer.c
-OBJECTS = writer.o
+CROSS_COMPILE=aarch64-none-linux-gnu-
+CC=gcc
+TARGET=writer
+SRC=writer.c
+OBJECTS=writer.o
 
-CFLAGS = -Wall -Wextra -g
+CFLAGS=-Wall -Wextra -g
 
 all: $(TARGET)
 
