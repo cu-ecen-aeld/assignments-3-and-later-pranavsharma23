@@ -109,7 +109,6 @@ make
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
 cp {*.sh,writer} "$OUTDIR/rootfs/home"
-cp conf/* "$OUTDIR/rootfs/home/conf"
 
 # TODO: Chown the root directory
 cd "$OUTDIR/rootfs"
