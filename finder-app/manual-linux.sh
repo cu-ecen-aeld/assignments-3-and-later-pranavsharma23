@@ -13,7 +13,7 @@ FINDER_APP_DIR=$(realpath $(dirname $0))
 ARCH=arm64
 CROSS_COMPILE=aarch64-none-linux-gnu-
 
-ASSIGNMENT_DIR=$(pwd)
+ASSIGNMENT_DIR=/home/pranav/Documents/linux_system_programming/assignment-1-pranavsharma23
 
 if [ $# -lt 1 ]
 then
@@ -37,19 +37,16 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
     git checkout ${KERNEL_VERSION}
 
     # TODO: Add your kernel build steps here
-    echo "Starting make mrproper"
     make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- mrproper
-    echo "Starting make defconfig"
     make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- defconfig
-    echo "Starting make all"
+    make -j4 ARCH=${ARCH} CROSS_COMPILE=aarch64-none-linux-gnu- scripts
     make -j4 ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- all
-    echo "Starting make modules"
     make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- modules
-    echo "Starting make dtbs"
     make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- dtbs
 fi
 
 echo "Adding the Image in outdir"
+cp ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ${OUTDIR}
 
 echo "Creating the staging directory for the root filesystem"
 cd "$OUTDIR"
@@ -93,10 +90,12 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 # TODO: Add library dependencies to rootfs
 SYSROOT=$(aarch64-none-linux-gnu-gcc -print-sysroot)
 cd "$OUTDIR/rootfs"
-cp -a "$SYSROOT/lib/ld-linux-aarch64.so.1" lib
-cp -a "$SYSROOT/lib64/libm.so.6" lib64
-cp -a "$SYSROOT/lib64/libresolv.so.2" lib64
-cp -a "$SYSROOT/lib64/libc.so.6" lib64
+#cp -a "$SYSROOT/lib/ld-linux-aarch64.so.1" lib
+#cp -a "$SYSROOT/lib64/libm.so.6" lib64
+#cp -a "$SYSROOT/lib64/libresolv.so.2" lib64
+#cp -a "$SYSROOT/lib64/libc.so.6" lib64
+sudo cp -a $SYSROOT/lib/* lib
+sudo cp -a $SYSROOT/lib64/* lib64
 
 # TODO: Make device nodes
 sudo mknod -m 666 dev/null c 1 3
@@ -110,13 +109,13 @@ make
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
 cp {*.sh,writer} "$OUTDIR/rootfs/home"
+cp conf/* "$OUTDIR/rootfs/home"
 
 # TODO: Chown the root directory
 cd "$OUTDIR/rootfs"
 sudo chown -R root:root * 
 
-cp ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ${OUTDIR}
 # TODO: Create initramfs.cpio.gz
-cd ${OUTDIR}
 find . | cpio -H newc -ov --owner root:root > ${OUTDIR}/initramfs.cpio
+cd ${OUTDIR}
 gzip -f initramfs.cpio
