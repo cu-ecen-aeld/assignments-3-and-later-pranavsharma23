@@ -1,5 +1,4 @@
-CROSS_COMPILE=aarch64-none-linux-gnu-
-CC=gcc
+CC=aarch64-none-linux-gnu-gcc
 TARGET=writer
 SRC=writer.c
 OBJECTS=writer.o

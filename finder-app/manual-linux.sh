@@ -13,6 +13,8 @@ FINDER_APP_DIR=$(realpath $(dirname $0))
 ARCH=arm64
 CROSS_COMPILE=aarch64-none-linux-gnu-
 
+ASSIGNMENT_DIR=$(pwd)
+
 if [ $# -lt 1 ]
 then
 	echo "Using default directory ${OUTDIR} for output"
@@ -35,11 +37,16 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
     git checkout ${KERNEL_VERSION}
 
     # TODO: Add your kernel build steps here
+    echo "Starting make mrproper"
     make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- mrproper
+    echo "Starting make defconfig"
     make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- defconfig
+    echo "Starting make all"
     make -j4 ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- all
+    echo "Starting make modules"
     make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- modules
-    make ARCH=arm64 CROSS_COMPILE=aarch4-none-linux-gnu- dtbs
+    echo "Starting make dtbs"
+    make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- dtbs
 fi
 
 echo "Adding the Image in outdir"
@@ -68,7 +75,7 @@ git clone git://busybox.net/busybox.git
     # TODO:  Configure busybox
     make distclean
     make defconfig
-    make menuconfig
+    #make menuconfig
 else
     cd busybox
 fi
@@ -77,12 +84,15 @@ fi
 make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
 make CONFIG_PREFIX="$OUTDIR/rootfs" ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} install
 
+cd "$OUTDIR/rootfs"
+
 echo "Library dependencies"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
-SYSROOT=aarch64-none-linux-gnu-gcc -print-sysroot
+SYSROOT=$(aarch64-none-linux-gnu-gcc -print-sysroot)
+cd "$OUTDIR/rootfs"
 cp -a "$SYSROOT/lib/ld-linux-aarch64.so.1" lib
 cp -a "$SYSROOT/lib64/libm.so.6" lib64
 cp -a "$SYSROOT/lib64/libresolv.so.2" lib64
@@ -93,18 +103,20 @@ sudo mknod -m 666 dev/null c 1 3
 sudo mknod -m 600 dev/console c 5 1
 
 # TODO: Clean and build the writer utility
+cd ${ASSIGNMENT_DIR}/finder-app
 make clean
-make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
+make
 
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
-cp finder-app/{*.sh,writer} $OUTDIR/rootfs/home
+cp {*.sh,writer} "$OUTDIR/rootfs/home"
 
 # TODO: Chown the root directory
 cd "$OUTDIR/rootfs"
 sudo chown -R root:root * 
 
+cp ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ${OUTDIR}
 # TODO: Create initramfs.cpio.gz
-cd "$OUTDIR/rootfs"
+cd ${OUTDIR}
 find . | cpio -H newc -ov --owner root:root > ${OUTDIR}/initramfs.cpio
 gzip -f initramfs.cpio
