@@ -13,8 +13,6 @@ FINDER_APP_DIR=$(realpath $(dirname $0))
 ARCH=arm64
 CROSS_COMPILE=aarch64-none-linux-gnu-
 
-ASSIGNMENT_DIR=/home/pranav/Documents/linux_system_programming/assignment-1-pranavsharma23
-
 if [ $# -lt 1 ]
 then
 	echo "Using default directory ${OUTDIR} for output"
@@ -102,13 +100,15 @@ sudo mknod -m 666 dev/null c 1 3
 sudo mknod -m 600 dev/console c 5 1
 
 # TODO: Clean and build the writer utility
-cd ${ASSIGNMENT_DIR}/finder-app
+cd ${FINDER_APP_DIR}
 make clean
 make
 
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
 cp {*.sh,writer} "$OUTDIR/rootfs/home"
+mkdir -p "$OUTDIR/rootfs/home/conf"
+cp conf/* "$OUTDIR/rootfs/home/conf"
 
 # TODO: Chown the root directory
 cd "$OUTDIR/rootfs"
