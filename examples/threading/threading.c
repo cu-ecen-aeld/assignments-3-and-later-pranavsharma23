@@ -5,6 +5,7 @@
 
 #include <sys/wait.h>
 #include <pthread.h>
+#include <errno.h>
 
 // Optional: use these functions to add debug or error prints to your application
 #define DEBUG_LOG(msg,...)
@@ -18,29 +19,32 @@ void* threadfunc(void* thread_param)
     // hint: use a cast like the one below to obtain thread arguments from your parameter
     //struct thread_data* thread_func_args = (struct thread_data *) thread_param;
 
-    int s = usleep (thread_param.wait_to_obtain_ms * 1000);
+    struct thread_data* thread_func_args = (struct thread_data *) thread_param;
+    int s = usleep (thread_func_args->wait_to_obtain_ms * 1000);
     if (s != 0)
     {
 	printf ("usleep failed on wait_to_obtain_ms\n");
     }
 
-    int rc = pthread_mutex_lock(&thread_param->mutex);
+    int rc = pthread_mutex_lock(thread_func_args->mutex);
     if (rc != 0)
     {
 	printf ("pthread_mutex_lock failed with %d\n", rc);
     } else {
-	s = usleep (thread_param.wait_to_release_ms * 1000);
+	s = usleep (thread_func_args->wait_to_release_ms * 1000);
 	if (s != 0)
 	{
 	    printf ("usleep failed on wait_to_release_ms\n");
 	}
 
-	rc = pthread_mutex_unlock(&thread_param->mutex);
+	rc = pthread_mutex_unlock(thread_func_args->mutex);
 	if (rc != 0)
 	{
 	    printf ("pthread_mutex_unlock failed with %d\n", rc);
 	}
     }
+
+    thread_func_args->thread_complete_success = true;
 
     return thread_param;
 }
@@ -56,14 +60,13 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
      *
      * See implementation details in threading.h file comment block
      */
-    struct thread_data thread_param = (thread_data *) malloc(sizeof(thread_data));
-    thread_param->mutex = *mutex;
-    thread_param.wait_to_obtain_ms = wait_to_obtain_ms;
-    thread_param.wait_to_release_ms = wait_to_release_ms;
+    struct thread_data *thread_param = malloc(sizeof(struct thread_data));
+    thread_param->mutex = mutex;
+    thread_param->wait_to_obtain_ms = wait_to_obtain_ms;
+    thread_param->wait_to_release_ms = wait_to_release_ms;
 
-    pthread_t thread;
     int ret;
-    ret = pthread_create(&thread, NULL, &threadfunc, &thread_param);
+    ret = pthread_create(thread, NULL, threadfunc, (void *) thread_param);
 
     if (ret != 0)
     {
@@ -71,8 +74,6 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
 	perror ("pthread_create");
 	return false;
     }
-
-    thread_param.thread_complete_success = true;
 
     return true;
 }
